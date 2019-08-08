@@ -3,6 +3,8 @@ import axios from "axios";
 export default function App() {
   const [results, setResults] = useState([]);
   const [query, setQuery] = useState("react hooks");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const searchInputRef = useRef();
   // useEffect will run after every render, causing infinite requests
   // .then/.catch
@@ -34,12 +36,19 @@ export default function App() {
   }, []);
 
   const getResults = async () => {
+    setLoading(true);
+
     if (query) {
-      const response = await axios.get(
-        `https://hn.algolia.com/api/v1/search?query=${query}`
-      );
-      setResults(response.data.hits);
+      try {
+        const response = await axios.get(
+          `https://hn.algolia.com/api/v1/search?query=${query}`
+        );
+        setResults(response.data.hits);
+      } catch (e) {
+        setError(e);
+      }
     }
+    setLoading(false);
   };
 
   const handleSubmit = e => {
@@ -55,33 +64,60 @@ export default function App() {
   };
 
   return (
-    <>
-      <form onSubmit={handleSubmit}>
+    <div className="max-w-lg mx-auto p-4 m-2 bg-purple-300 shadow-lg rounded">
+      <img
+        src="https://icon.now.sh/react/c0c"
+        alt="React Logo"
+        className="float-right h-12"
+      />
+      <h1 className="text-grey-900 font-thin text-2xl">Hooks News</h1>
+      <form onSubmit={handleSubmit} className="mb-2">
         <input
           id="search-input"
           type="text"
           value={query}
           ref={searchInputRef}
           onChange={event => setQuery(event.target.value)}
+          className="border p-1 rounded"
         />
-        <button type="submit">Search</button>
-        <button type="button" onClick={handleClearSearch}>
+        <button
+          type="submit"
+          className="bg-purple-900 text-white rounded m-1 px-3 py-1"
+        >
+          Search
+        </button>
+        <button
+          type="button"
+          className="bg-white text-purple-900 border-solid rounded m-1 px-3 py-1"
+          onClick={handleClearSearch}
+        >
           Clear
         </button>
       </form>
-      <ul>
-        {results.map(result => {
-          if (result.url) {
-            return (
-              <li key={result.objectID}>
-                <a href={result.url} target="_blank">
-                  {result.title}
-                </a>
-              </li>
-            );
-          }
-        })}
-      </ul>
-    </>
+      {loading ? (
+        <div className="font-bold text-blue">Loading results...</div>
+      ) : (
+        <ul className="leading-loose">
+          {results.map(result => {
+            if (result.url) {
+              return (
+                <li key={result.objectID}>
+                  <a
+                    href={result.url}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    className="underline hover:text-white"
+                  >
+                    {result.title}
+                  </a>
+                </li>
+              );
+            }
+            return null;
+          })}
+        </ul>
+      )}
+      {error && <div className="font-bold text-red-500">{error.message}</div>}
+    </div>
   );
 }
